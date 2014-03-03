@@ -403,7 +403,17 @@ do
 							optionSubTree:add_expert_info(PI_PROTOCOL, PI_ERROR, "Option value length (" .. optionLength .. ") out of allowed range (min: " .. minOptionLength .. ", max: " .. maxOptionLength ..")")
 						end
 						
-				
+
+						--blockwise transfer related options
+						--elseif (optionNumber == 23 or optionNumber == 27) and optionLength == 1 then
+						--  optionTreeItem:add(f.blockOption8Num, buffer(i + 1, optionLength))
+						--  optionTreeItem:add(f.blockOption8More, buffer(i + 1,optionLength))
+						--  optionTreeItem:add(f.blockOption8BlockSize, buffer(i + 1, optionLength))
+
+						--other (opaque) options
+						--else
+						--  optionTreeItem:add(
+						
 						lastOption = optionNumber
 					end
 
@@ -424,8 +434,7 @@ do
 
 	-- load the udp.port table
 	udp_table = DissectorTable.get("udp.port")
-
-	-- register CoAP protocol to handle udp port 5683
+	-- register our protocol to handle udp port 5683
 	udp_table:add(5683, coapProto)
   
 end  
