@@ -68,7 +68,7 @@ do
 		[165]="5.05 Proxying Not Supported"
 	}
   	
-
+	-- human readable names for pre-defined content formats
 	local formatStrings =  {
 		[0]="text/plain; charset=utf-8",
 		[40]="application/link-format",
@@ -78,10 +78,10 @@ do
 		[50]="application/json"
     }
 
-    --create fields
+    -- create fields
 	local f = coapProto.fields
 	
-	--header fields
+	-- header fields
 	f.version = ProtoField.uint8 ("coap18.version", "Version", nil, nil, 0xC0)
 	f.type = ProtoField.uint8 ("coap18.type", "Type", nil, types, 0x30)
 	f.tkl = ProtoField.uint8 ("coap18.tkl", "Token Length", nil, nil, 0x0F)
@@ -89,17 +89,12 @@ do
 	f.msgid = ProtoField.uint16 ("coap18.msgid", "Message ID (decimal)", base.DEC)
 	f.token = ProtoField.bytes ("coap18.token", "Token")
 
-	--option fields  
+	-- core protocol option fields  
 	f.options = ProtoField.string("coap18.options", "Options")
 	f.ifmatch = ProtoField.bytes("coap18.options.ifmatch", "If-Match (No. 1)")
 	f.urihost = ProtoField.string("coap18.options.urihost", "URI-Host (No. 3)")
 	f.etag = ProtoField.bytes("coap18.options.etag", "ETAG (No. 4)")
-
 	f.ifnonematch = ProtoField.string("coap18.options.ifnonematch", "If-None-Match (No. 5)")
-
-	f.observeempty = ProtoField.string("coap18.options.observe", "Observe (No. 6)")
-	f.observeuint =	ProtoField.uint24("coap18.options.observe", "Observe (No. 6)")
-
 	f.uriport = ProtoField.uint16("coap18.options.uriport", "URI-Port (No. 7)") 
 	f.locationpath = ProtoField.string("coap18.options.locationpath", "Location Path (No. 8)")
 	f.uripath = ProtoField.string("coap18.options.uripath", "URI-Path (No. 11)")
@@ -108,7 +103,15 @@ do
 	f.uriquery = ProtoField.string("coap18.options.uriquery", "URI-Query (No. 15)")
 	f.accept = ProtoField.uint16("coap18.options.accept", "Accept (No. 17)", nil, formatStrings)
 	f.locationquery = ProtoField.string("coap18.options.locationquery", "Location-Query (No. 20)")
+	f.proxyuri = ProtoField.string("coap18.options.proxyuri", "Proxy-URI (No. 35)")
+	f.proxyscheme = ProtoField.string("coap18.options.proxyscheme", "Proxy-Scheme (No. 39)")
+	f.size1 = ProtoField.uint32("coap18.options.size1", "Size1 (No. 60)")
+
+	-- observe extension fields
+	f.observeempty = ProtoField.string("coap18.options.observe", "Observe (No. 6)")
+	f.observeuint =	ProtoField.uint24("coap18.options.observe", "Observe (No. 6)")
 	
+	-- blockwise transfer extension fields
 	f.block2 = ProtoField.bytes("coap.options.block2", "Block2 (No. 23)")
 	f.block2num24 = ProtoField.uint24("coap.options.block2.num", "NUM", nil, nil, 0xFFFFF0)
 	f.block2num16 = ProtoField.uint16("coap.options.block2.num", "NUM", nil, nil, 0xFFF0)
@@ -124,42 +127,38 @@ do
 	f.block1szx = ProtoField.uint8("coap.options.block1.szx", "SZX", nil, nil, 0x07)
 
 	f.size2 = ProtoField.uint32("coap18.options.size2", "Size2 (No. 28)")
-	f.proxyuri = ProtoField.string("coap18.options.proxyuri", "Proxy-URI (No. 35)")
-	f.proxyscheme = ProtoField.string("coap18.options.proxyscheme", "Proxy-Scheme (No. 39)")
-	f.size1 = ProtoField.uint32("coap18.options.size1", "Size1 (No. 60)")
-	
-	f.payload = ProtoField.bytes("coap18.payload", "Payload (Content)")
 
+	-- the message payload field
+	f.payload = ProtoField.bytes("coap18.payload", "Payload (Content)")
   
-	--function to dissect it
+
+	--function to dissect the bytes
 	function coapProto.dissector(buffer, pinfo, tree)
 		pinfo.cols.protocol = "CoAP (Draft 18)"
-		local prototree = tree:add(coapProto, buffer(), "CoAP (Draft 18) Data")
+		local protoTree = tree:add(coapProto, buffer(), "CoAP (Draft 18) Data")
 
 		local isRequest = not ((buffer(1, 1):uint() > 4))
 
-		prototree:add(f.version, buffer(0, 1))
-		prototree:add(f.type, buffer(0, 1))
-		prototree:add(f.tkl, buffer(0, 1))
-		prototree:add(f.code, buffer(1, 1))
-		prototree:add(f.msgid, buffer(2, 2))
-
+		protoTree:add(f.version, buffer(0, 1))
+		protoTree:add(f.type, buffer(0, 1))
+		protoTree:add(f.tkl, buffer(0, 1))
+		protoTree:add(f.code, buffer(1, 1))
+		protoTree:add(f.msgid, buffer(2, 2))
 
 		local tokenLength = bit32.band(buffer(0, 1):uint(), 0x0F)
 		local index = 4
-
+		
+		-- read the token (if any)
 		if tokenLength > 0 and tokenLength <= 8 then
-		-- read token
-		prototree:add(f.token, buffer(index, tokenLength))
+			protoTree:add(f.token, buffer(index, tokenLength))
 		end
-
 		index = index + tokenLength
 
 		--dissect options
 		if(index < buffer:len()) then
 			local endOfOptions = buffer(index, 1):uint() == 0xFF
 			if (not endOfOptions) then
-				local optionsTree = prototree:add(f.options)
+				local optionsTree = protoTree:add(f.options)
 				local lastOption = 0
 			
 				-- loop over options until buffer ends or end-of-options marker is reached
@@ -171,8 +170,7 @@ do
 					local optionDelta = bit32.rshift(bit32.band(optionHeader, 0xF0), 4)
 					local optionLength = bit32.band(optionHeader, 0x0F)
 
-
-					-- check for end-of-options marker so there are no more options
+					-- check for end-of-options marker, i.e. there are no more options
 					if (optionHeader == 0xFF) then
 						endOfOptions = true          
 						optionLength = 0
@@ -434,14 +432,12 @@ do
 			end
 		end
 
-		-- if still data available, add as payload
+		-- if there is more data available, consider this the payload
 		if index < buffer:len() then
-			prototree:add(f.payload, buffer(index, buffer:len() - index))
+			protoTree:add(f.payload, buffer(index, buffer:len() - index))
 		end
 
 	end
-
-	
 
 	-- load the udp.port table
 	udp_table = DissectorTable.get("udp.port")
