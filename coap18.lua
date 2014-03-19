@@ -129,7 +129,7 @@ do
 	f.size2 = ProtoField.uint32("coap18.options.size2", "Size2 (No. 28)")
 
 	-- the message payload field
-	f.payload = ProtoField.bytes("coap18.payload", "Payload (Content)")
+	f.payload = ProtoField.string("coap18.payload", "Payload (Content)")
   
 
 	--function to dissect the bytes
