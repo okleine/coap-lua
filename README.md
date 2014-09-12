@@ -2,9 +2,9 @@ To use this script with Wireshark just copy the file coap18.lua into the "plugin
 
 Supported protocol and extension versions:
 
-- CoAP Protocol (Draft 18)
-- CoAP Observe (Draft 11)
-- CoAP Blockwise Transfer (Draft 14)
+- CoAP Protocol (RFC 7252, aka draft 18)
+- CoAP Observe (draft 14)
+- CoAP Blockwise Transfer (draft 14)
 
 Type "coap18" in the filter field of Wireshark to filter all CoAP messages using this script. However, you can use "coap18.*" as prefix for a huge number of other (more advanced) filters, e.g.
 

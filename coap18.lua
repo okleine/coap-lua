@@ -24,7 +24,7 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMA
 ]]
 
 do
-	coapProto = Proto("coap18","CoAP Protocol (Draft 18)")
+	coapProto = Proto("coap18","CoAP (RFC 7252)")
 
 	--message types
 	local types= {
@@ -108,8 +108,7 @@ do
 	f.size1 = ProtoField.uint32("coap18.options.size1", "Size1 (No. 60)")
 
 	-- observe extension fields
-	f.observeempty = ProtoField.string("coap18.options.observe", "Observe (No. 6)")
-	f.observeuint =	ProtoField.uint24("coap18.options.observe", "Observe (No. 6)")
+	f.observe =	ProtoField.uint24("coap18.options.observe", "Observe (No. 6)")
 	
 	-- blockwise transfer extension fields
 	f.block2 = ProtoField.bytes("coap.options.block2", "Block2 (No. 23)")
@@ -242,22 +241,15 @@ do
 						-- Observe
 						elseif (optionNumber == 6) then
 							print("Option No. 6")
-							if(isRequest == true) then
-								optionSubTree = optionsTree:add(f.observeempty, "<EMPTY>")
-
-								minOptionLength = 0
-								maxOptionLength = 0
+							if(optionLength == 0) then
+								optionSubTree = optionsTree:add(f.observe, 0)
 							else
-								if(optionLength == 0) then
-									optionSubTree = optionsTree:add(f.observeuint, 0)
-								else
-									optionSubTree = optionsTree:add(f.observeuint, buffer(optionStart, optionLength))
-								end		
+								optionSubTree = optionsTree:add(f.observe, buffer(optionStart, optionLength))
+							end		
 							
-								minOptionLength = 0
-								maxOptionLength = 3
-							end
-						
+							minOptionLength = 0
+							maxOptionLength = 3
+								
 						-- URI-Port
 						elseif (optionNumber == 7) then
 							if(optionLength == 0) then
