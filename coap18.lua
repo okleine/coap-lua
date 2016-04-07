@@ -50,6 +50,7 @@ do
 		[67]="2.03 Valid",
 		[68]="2.04 Changed",
 		[69]="2.05 Content",
+		[95]="2.31 Continue",
 		[128]="4.00 Bad Request",
 		[129]="4.01 Unauthorized",
 		[130]="4.02 Bad Option",                
@@ -57,6 +58,7 @@ do
 		[132]="4.04 Not Found",
 		[133]="4.05 Method Not Allowed",
 		[134]="4.06 Not Acceptable",
+		[136]="4.08 Request Entitiy Incomplete",
 		[140]="4.12 Precondition Failed",
 		[141]="4.13 Request Entity Too Large",
 		[143]="4.15 Unsupported Content-Format",
@@ -77,7 +79,23 @@ do
 		[47]="application/exi",
 		[50]="application/json"
     }
-
+    
+	-- decoded blocksizes (from SZX)
+	local blocksize = {
+	    [0] = "16 Byte",
+	    [1] = "32 Byte",
+	    [2] = "64 Byte",
+	    [3] = "128 Byte",
+	    [4] = "256 Byte",
+	    [5] = "512 Byte",
+	    [6] = "1024 Byte"
+	}
+	
+	local moreblocks = {
+	   [0] = "Last block",
+	   [1] = "More blocks to come"
+	}
+	
     -- create fields
 	local f = coapProto.fields
 	
@@ -116,14 +134,14 @@ do
 	f.block2num16 = ProtoField.uint16("coap.options.block2.num", "NUM", nil, nil, 0xFFF0)
 	f.block2num8 = ProtoField.uint8("coap.options.block2.num", "NUM", nil, nil, 0xF0)
 	f.block2m = ProtoField.uint8("coap.options.block2.m", "M", nil, nil, 0x08)
-	f.block2szx = ProtoField.uint8("coap.options.blok2.szx", "SZX", nil, nil, 0x07)
+	f.block2szx = ProtoField.uint8("coap.options.blok2.szx", "SZX", nil, blocksize, 0x07)
 
 	f.block1 = ProtoField.bytes("coap.options.block1", "Block1 (No. 27)")
 	f.block1num24 = ProtoField.uint24("coap.options.block1.num", "NUM", nil, nil, 0xFFFFF0)
 	f.block1num16 = ProtoField.uint16("coap.options.block1.num", "NUM", nil, nil, 0xFFF0)
 	f.block1num8 = ProtoField.uint8("coap.options.block1.num", "NUM", nil, nil, 0xF0)
 	f.block1m = ProtoField.uint8("coap.options.block1.m", "M", nil, nil, 0x08)
-	f.block1szx = ProtoField.uint8("coap.options.block1.szx", "SZX", nil, nil, 0x07)
+	f.block1szx = ProtoField.uint8("coap.options.block1.szx", "SZX", nil, blocksize, 0x07)
 
 	f.size2 = ProtoField.uint32("coap18.options.size2", "Size2 (No. 28)")
 
@@ -133,8 +151,8 @@ do
 
 	--function to dissect the bytes
 	function coapProto.dissector(buffer, pinfo, tree)
-		pinfo.cols.protocol = "CoAP (Draft 18)"
-		local protoTree = tree:add(coapProto, buffer(), "CoAP (Draft 18) Data")
+		pinfo.cols.protocol = "CoAP (RFC 7252)"
+		local protoTree = tree:add(coapProto, buffer(), "CoAP (RFC 7252) Data")
 
 		local isRequest = not ((buffer(1, 1):uint() > 4))
 
